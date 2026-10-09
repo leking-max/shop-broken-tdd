@@ -109,3 +109,42 @@ def test_unsupported_city_is_rejected() -> None:
     result = validate_order(lines, shipping_city="INVALID_CITY")
     assert result is not None
     assert len(result) > 0
+def test_promo_code_and_city_validation() -> None:
+    """Couvre les règles 9 et 10 de validate_order."""
+    lines = [{"sku": "A", "qty": "1", "unit_price_kopecks": "100"}]
+    # Promo inconnu
+    assert validate_order(lines, promo_code="FAKE") is not None
+    # Ville inconnue
+    assert validate_order(lines, shipping_city="PARIS") is not None
+    # Cas valide avec promo et ville
+    assert validate_order(lines, promo_code="WELCOME10", shipping_city="msk") is None
+
+def test_tier_discounts_and_delivery_logic() -> None:
+    """Couvre les lignes de calcul de remise et de livraison (Exemples 2, 3, 4 et 5)."""
+    # Exemple 2 : Remise par palier (10 unités)
+    lines = [{"sku": "B", "qty": "10", "unit_price_kopecks": "1990"}]
+    assert calculate_order_total(lines) == 22_686
+
+    # Exemple 3 : Promo + Palier
+    lines = [{"sku": "C", "qty": "50", "unit_price_kopecks": "1990"}]
+    assert calculate_order_total(lines, promo_code="WELCOME10") == 160_290
+
+    # Exemple 4 : Plafond de remise (VIP35 -> max 30%)
+    lines = [{"sku": "D", "qty": "100", "unit_price_kopecks": "10000"}]
+    assert calculate_order_total(lines, promo_code="VIP35", shipping_city="spb") == 840_000
+
+    # Exemple 5 : Livraison gratuite au seuil
+    lines = [{"sku": "E", "qty": "1", "unit_price_kopecks": "500000"}]
+    assert calculate_order_total(lines, shipping_city="msk") == 600_000
+    
+def test_coverage_edge_cases() -> None:
+    """Tests pour couvrir les branches manquantes."""
+    # Cas 1: Promo valide sans palier (couvre la branche promo seule)
+    lines = [{"sku": "X", "qty": "1", "unit_price_kopecks": "1000"}]
+    result = calculate_order_total(lines, promo_code="SUMMER15")
+    assert result is not None
+    
+    # Cas 2: Livraison payante (montant < 500k)
+    lines = [{"sku": "Y", "qty": "1", "unit_price_kopecks": "100"}]
+    result = calculate_order_total(lines, shipping_city="spb")
+    assert result is not None and result > 120 # 100 + TVA + Port

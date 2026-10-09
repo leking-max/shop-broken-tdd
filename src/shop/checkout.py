@@ -59,6 +59,7 @@ def applypromo(code: str, montant: int) -> float:
         return 0.65
     return 1.0
 
+
 def _validate_single_line(line: dict[str, str], index: int, seen_skus: set[str]) -> str | None:
     """Valide une seule ligne de commande et met à jour les SKU vus."""
     # Règle 3 : Clés requises manquantes
@@ -67,7 +68,7 @@ def _validate_single_line(line: dict[str, str], index: int, seen_skus: set[str])
             return f"line {index}: missing required key '{key}'"
 
     sku = line["sku"]
-    
+
     # Règle 2 : SKU vide
     if not sku:
         return f"line {index}: sku cannot be empty"
@@ -75,7 +76,7 @@ def _validate_single_line(line: dict[str, str], index: int, seen_skus: set[str])
     # Règle 8 : SKU dupliqué
     if sku in seen_skus:
         return f"line {index}: duplicate sku '{sku}'"
-    
+
     # Règles 4 & 5 : Quantité
     try:
         qty = int(line["qty"])
@@ -93,7 +94,8 @@ def _validate_single_line(line: dict[str, str], index: int, seen_skus: set[str])
         return f"line {index}: unit price cannot be negative"
 
     return None
-    
+
+
 def validate_order(
     lines: list[dict[str, str]],
     promo_code: str = "",

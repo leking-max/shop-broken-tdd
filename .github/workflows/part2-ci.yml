@@ -1,0 +1,72 @@
+name: part2-ci
+
+# Часть 2: тесты расчёта заказа, покрытие и дисциплина TDD.
+# Команды совпадают с ./scripts/check-part2.sh.
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: part2-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    name: Тесты (pytest, Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10
+        with:
+          python-version: ${{ matrix.python-version }}
+          enable-cache: true
+      - run: uv sync --frozen
+      - run: ./scripts/setup.sh --check
+      - name: весь набор тестов
+        run: uv run pytest -v
+
+  checkout-coverage:
+    name: Покрытие расчёта заказа (не ниже 90 %)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10
+        with:
+          python-version: "3.12"
+          enable-cache: true
+      - run: uv sync --frozen
+      - run: ./scripts/setup.sh --check
+      - name: pytest + покрытие shop.checkout
+        run: >-
+          uv run pytest tests/test_checkout.py
+          --cov=shop.checkout
+          --cov-report=term-missing
+          --cov-fail-under=90
+
+  tdd-history:
+    name: Порядок TDD (тесты раньше кода)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # Нужна полная история: проверяется порядок коммитов.
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v10
+        with:
+          python-version: "3.12"
+          enable-cache: true
+      - run: uv sync --frozen
+      - run: ./scripts/setup.sh --check
+      - name: проверка истории
+        run: uv run python scripts/check_tdd_history.py

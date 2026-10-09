@@ -1,0 +1,24 @@
+# Виртуальное окружение и кэши
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# Сборка
+build/
+dist/
+*.egg-info/
+
+# Локальное
+.env
+.env.*
+!.env.example
+.idea/
+.vscode/
+.DS_Store
